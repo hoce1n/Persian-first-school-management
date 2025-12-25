@@ -1,0 +1,241 @@
+@page "/attendance"
+@attribute [Authorize(Roles = "Teacher, Admin")]
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.EntityFrameworkCore
+@using School.Models
+@using School.Data
+@inject ApplicationDbContext Context
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+
+<div class="container mx-auto p-4">
+    <h3 class="text-2xl font-bold mb-6">حضور و غیاب</h3>
+
+    <div class="mb-4">
+        <label class="block text-sm font-medium mb-2">انتخاب کلاس</label>
+        <InputSelect class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                     @bind-Value="selectedClassId">
+            <option value="0">انتخاب کنید...</option>
+            @foreach (var classItem in classes)
+            {
+                <option value="@classItem.Id">@classItem.Name</option>
+            }
+        </InputSelect>
+        <button class="mt-2 inline-flex items-center justify-center whitespace-nowrap text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-neutral-900 hover:bg-neutral-900/90 h-10 px-4 py-2 w-full rounded-xl hover:cursor-pointer text-white font-medium shadow-md" 
+                @onclick="LoadStudentsForClass" disabled="@(selectedClassId == 0)">
+            نمایش دانش‌آموزان
+        </button>
+    </div>
+
+    @if (students.Any())
+    {
+        <div class="bg-white rounded-lg shadow-md">
+            <h4 class="text-lg font-semibold mb-4">دانش‌آموزان کلاس</h4>
+            @foreach (var student in students)
+            {
+                <div class="flex flex-col p-4 border-b last:border-b-0">
+                    <div class="flex flex-col space-y-2 sm:space-y-0 sm:flex-row  sm:items-center justify-between">
+                        <span class="text-neutral-800 font-medium">
+                            <svg class="inline-block w-6 h-6"><use href="#graduation-cap"></use></svg>
+                            @student.Name
+                        </span>
+                        <div class="flex items-center space-x-4">
+                            <label class="flex items-center space-x-1">
+                                <input type="radio" 
+                                       name="status-@student.Id" 
+                                       value="Present" 
+                                       checked="@(attendanceStatus[student.Id].Status == AttendanceStatus.Present)" 
+                                       @onchange="() => SetStatus(student.Id, AttendanceStatus.Present)" />
+                                <span class="text-sm">حاضر</span>
+                            </label>
+                            <label class="flex items-center space-x-1">
+                                <input type="radio" 
+                                       name="status-@student.Id" 
+                                       value="Absent" 
+                                       checked="@(attendanceStatus[student.Id].Status == AttendanceStatus.Absent)" 
+                                       @onchange="() => SetStatus(student.Id, AttendanceStatus.Absent)" />
+                                <span class="text-sm">غیبت غیرموجه</span>
+                            </label>
+                            <label class="flex items-center space-x-1">
+                                <input type="radio" 
+                                       name="status-@student.Id" 
+                                       value="Excused" 
+                                       checked="@(attendanceStatus[student.Id].Status == AttendanceStatus.Excused)" 
+                                       @onchange="() => SetStatus(student.Id, AttendanceStatus.Excused)" />
+                                <span class="text-sm">غیبت موجه</span>
+                            </label>
+                        </div>
+                    </div>
+                    @{
+                        var currentAttendance = attendanceStatus[student.Id];
+                        if (currentAttendance.Status == AttendanceStatus.Excused)
+                        {
+                            <div class="mt-2">
+                                <InputTextArea class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-neutral-500 placeholder:text-xs"
+                                    @bind-Value="@currentAttendance.Reason" placeholder="دلیل غیبت موجه را وارد کنید" />
+                            </div>
+                        }
+                    }
+                </div>
+            }
+            <button class="mt-4 inline-flex items-center justify-center whitespace-nowrap text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-neutral-900 hover:bg-neutral-900/90 h-10 px-4 py-2 w-full rounded-xl hover:cursor-pointer text-white font-medium shadow-md" 
+                    @onclick="SubmitAttendance" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span>در حال ثبت...</span>
+                }
+                else
+                {
+                    <span>ثبت حضور و غیاب</span>
+                }
+            </button>
+            @if (!string.IsNullOrEmpty(message))
+            {
+                <div class="mt-4 p-2 rounded-md @messageClass">@message</div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private int selectedClassId;
+    private List<Class> classes = new();
+    private List<Student> students = new();
+    private Dictionary<int, AttendanceModel> attendanceStatus = new();
+    private string? message;
+    private string messageClass = "";
+    private bool isLoading = false;
+    private int? teacherId;
+
+    private class AttendanceModel
+    {
+        public AttendanceStatus Status { get; set; } = AttendanceStatus.Present;
+        public string? Reason { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            var username = user.Identity.Name;
+            var dbUser = await Context.Users
+                .Include(u => u.Teacher)
+                .FirstOrDefaultAsync(u => u.UserName == username);
+            if (dbUser?.Teacher != null)
+            {
+                teacherId = dbUser.Teacher.Id;
+                classes = await Context.Classes
+                    .Where(c => c.TeacherId == teacherId.Value)
+                    .ToListAsync();
+                message = $"تعداد کلاس‌ها: {classes.Count}";
+                messageClass = "bg-blue-100 text-blue-800 text-center text-sm";
+            }
+            else
+            {
+                message = "خطا: معلم یافت نشد.";
+                messageClass = "bg-red-100 text-red-800 text-center text-sm";
+            }
+        }
+    }
+
+    private async Task LoadStudentsForClass()
+    {
+        message = $"LoadStudentsForClass اجرا شد: ClassId = {selectedClassId}";
+        messageClass = "bg-blue-100 text-blue-800 text-sm text-center";
+
+        if (selectedClassId != 0 && teacherId.HasValue)
+        {
+            students = await Context.StudentClasses
+                .Where(sc => sc.ClassId == selectedClassId)
+                .Include(sc => sc.Student)
+                .Select(sc => sc.Student)
+                .ToListAsync();
+            attendanceStatus = students.ToDictionary(s => s.Id, s => new AttendanceModel { Status = AttendanceStatus.Present });
+            message = $"تعداد دانش‌آموزان: {students.Count}";
+        }
+        else
+        {
+            students = new List<Student>();
+            attendanceStatus.Clear();
+            message = "لطفاً یک کلاس انتخاب کنید.";
+            messageClass = "bg-yellow-100 text-yellow-800";
+        }
+        StateHasChanged();
+    }
+
+    private void SetStatus(int studentId, AttendanceStatus newStatus)
+    {
+        Console.WriteLine($"Setting status for student {studentId} to {newStatus}");
+        attendanceStatus[studentId].Status = newStatus;
+        if (newStatus != AttendanceStatus.Excused)
+        {
+            attendanceStatus[studentId].Reason = null;
+        }
+        StateHasChanged();
+    }
+
+    private async Task SubmitAttendance()
+    {
+        if (selectedClassId == 0 || !teacherId.HasValue)
+        {
+            message = "لطفاً یک کلاس انتخاب کنید.";
+            messageClass = "bg-red-100 text-red-800 text-sm text-center";
+            return;
+        }
+
+        isLoading = true;
+        message = null;
+        messageClass = "";
+
+        try
+        {
+            var today = DateTime.UtcNow.Date;
+            var studentIds = students.Select(s => s.Id).ToList();
+
+            var existingRecords = await Context.Attendances
+                .Where(a => studentIds.Contains(a.StudentId) && a.ClassId == selectedClassId && a.Date.Date == today)
+                .ToListAsync();
+
+            foreach (var student in students)
+            {
+                var record = existingRecords
+                .FirstOrDefault(a => a.StudentId == student.Id);
+                
+                if (record == null)
+                {
+                    record = new Attendance
+                    {
+                        StudentId = student.Id,
+                        TeacherId = teacherId.Value,
+                        ClassId = selectedClassId,
+                        Date = today,
+                        Status = attendanceStatus[student.Id].Status,
+                        Reason = attendanceStatus[student.Id].Reason
+                    };
+                    Context.Attendances.Add(record);
+                }
+                else
+                {
+                    record.Status = attendanceStatus[student.Id].Status;
+                    record.Reason = attendanceStatus[student.Id].Reason;
+                    Context.Attendances.Update(record);
+                }
+            }
+
+            await Context.SaveChangesAsync();
+            message = "حضور و غیاب با موفقیت ثبت شد.";
+            messageClass = "bg-green-100 text-green-800 text-sm text-center";
+        }
+        catch (Exception ex)
+        {
+            message = $"خطا در ثبت حضور و غیاب: {ex.Message}";
+            messageClass = "bg-red-100 text-red-800 text-center text-sm";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

@@ -1,0 +1,200 @@
+﻿@page "/addstudents"
+@attribute [Authorize(Roles = "Teacher, Admin")]
+@inject ApplicationDbContext Context
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>افزودن دانش آموز</PageTitle>
+<div class="container mx-auto p-4">
+    <h3 class="text-2xl font-bold text-neutral-800 mb-6">افزودن دانش‌آموز</h3>
+
+    <EditForm Model="studentModel" OnValidSubmit="HandleAddStudent"
+        class="bg-neutral-100 p-6 rounded-lg shadow-md mb-8">
+        <DataAnnotationsValidator />
+        <div class="mb-4">
+            <label class="block text-neutral-700 font-medium mb-2">نام:</label>
+            <InputText
+                class="w-full p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-neutral-500"
+                @bind-Value="studentModel.FirstName" />
+            <ValidationMessage For="@(() => studentModel.FirstName)" class="text-red-600" />
+        </div>
+        <div class="mb-4">
+            <label class="block text-neutral-700 font-medium mb-2">نام خانوادگی:</label>
+            <InputText
+                class="w-full p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-neutral-500"
+                @bind-Value="studentModel.LastName" />
+            <ValidationMessage For="@(() => studentModel.LastName)" class="text-red-600" />
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">شماره تلفن</label>
+            <InputText
+                class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                @bind-Value="studentModel.PhoneNumber" placeholder="شماره تلفن (اختیاری)" />
+            <ValidationMessage For="@(() => studentModel.PhoneNumber)" class="text-red-600 text-sm" />
+        </div>
+        <div class="mb-4">
+            <label class="block text-neutral-700 font-medium mb-2">کلاس:</label>
+            <InputSelect
+                class="w-full p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-neutral-500"
+                @bind-Value="studentModel.ClassId">
+                <option value="0">انتخاب کنید...</option>
+                @foreach (var classItem in classes)
+                {
+                    <option value="@classItem.Id">@classItem.Name</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() => studentModel.ClassId)" class="text-red-600" />
+        </div>
+        <button type="submit" class="bg-neutral-800 text-white px-4 py-2 rounded-md hover:bg-neutral-700 transition">
+            @if (isLoading)
+            {
+                <span class="flex items-center justify-center gap-2">
+                    <svg class="animate-spin h-5 w-5 text-black">
+                        <use href="#loader"></use>
+                    </svg>
+                    درحال افزودن...
+                </span>
+            }
+            else
+            {
+                <span>افزودن</span>
+            }
+        </button>
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="mt-4 p-2 rounded-md @messageClass">@message</div>
+        }
+    </EditForm>
+</div>
+
+@code {
+    private StudentModel studentModel = new();
+    private List<Class> classes = new();
+    private string? message;
+    private string messageClass = "";
+    private bool isLoading = false;
+    private int? teacherId;
+
+    private class StudentModel
+    {
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? PhoneNumber { get; set; }
+        public int ClassId { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            var username = user.Identity.Name;
+            var dbUser = await Context.Users
+            .Include(u => u.Teacher)
+            .FirstOrDefaultAsync(u => u.UserName == username);
+            if (dbUser?.Teacher != null)
+            {
+                teacherId = dbUser.Teacher.Id;
+                classes = await Context.Classes
+                .Where(c => c.TeacherId == teacherId.Value)
+                .ToListAsync();
+            }
+        }
+    }
+
+    private async Task HandleAddStudent()
+    {
+        isLoading = true;
+        message = null;
+        messageClass = "";
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(studentModel.FirstName) ||
+            string.IsNullOrWhiteSpace(studentModel.LastName))
+            {
+                message = "لطفاً تمام فیلدهای اجباری را پر کنید.";
+                messageClass = "bg-red-100 text-red-800";
+                return;
+            }
+            if (studentModel.ClassId == 0)
+            {
+                message = "لطفاً یک کلاس انتخاب کنید.";
+                messageClass = "bg-red-100 text-red-800";
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(studentModel.PhoneNumber) &&
+            await Context.Users.AnyAsync(u => u.PhoneNumber == studentModel.PhoneNumber))
+            {
+                message = "شماره تلفن قبلاً ثبت شده است.";
+                messageClass = "bg-red-100 text-red-800";
+                return;
+            }
+
+            string generatedUserName = await GenerateUniqueUserName();
+            const string defaultPassword = "123456";
+
+            var user = new User
+            {
+                UserName = generatedUserName,
+                PhoneNumber = studentModel.PhoneNumber,
+                Role = Role.Student,
+                PasswordHash = new PasswordHasher<User>().HashPassword(null, defaultPassword)
+            };
+
+            var student = new Student
+            {
+                Name = $"{studentModel.FirstName} {studentModel.LastName}",
+                User = user,
+                TeacherId = teacherId!.Value
+            };
+
+            var studentClass = new StudentClass
+            {
+                Student = student,
+                ClassId = studentModel.ClassId
+            };
+
+            Context.Users.Add(user);
+            Context.Students.Add(student);
+            Context.StudentClasses.Add(studentClass);
+            await Context.SaveChangesAsync();
+
+            message = $"دانش‌آموز با موفقیت اضافه شد. نام کاربری: {generatedUserName}";
+            messageClass = "bg-green-100 text-green-800";
+            studentModel = new StudentModel();
+        }
+        catch (Exception ex)
+        {
+            message = $"خطا در افزودن دانش‌آموز: {ex.Message}";
+            messageClass = "bg-red-100 text-red-800";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task<string> GenerateUniqueUserName()
+    {
+        const string prefix = "Student_";
+        int nextNumber = 1;
+
+        var existingUsers = await Context.Users
+        .Where(u => u.UserName.StartsWith(prefix))
+        .Select(u => u.UserName)
+        .ToListAsync();
+
+        if (existingUsers.Any())
+        {
+            var numbers = existingUsers
+            .Select(u => int.TryParse(u.Replace(prefix, ""), out int num) ? num : 0)
+            .OrderByDescending(n => n)
+            .ToList();
+            nextNumber = numbers.First() + 1;
+        }
+
+        return $"{prefix}{nextNumber:D3}";
+    }
+}

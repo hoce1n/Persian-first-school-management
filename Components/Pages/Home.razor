@@ -1,0 +1,168 @@
+﻿@page "/"
+@attribute [Authorize]
+<PageTitle>داشبورد</PageTitle>
+
+<AuthorizeView Roles="Admin">
+<div class="relative flex items-center justify-center h-screen w-full m-auto p-16 bg-background text-foreground">
+    <div class="absolute lab-bg inset-0 size-full">
+        <div class="absolute inset-0 bg-[radial-gradient(#00000021_1px,transparent_1px)]"></div>
+        <div class="flex w-full justify-center relative">
+            <div class="grid w-full auto-rows-[22rem] grid-cols-3 gap-4 md:grid-rows-3">
+                <NavLink href="/reports" class="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] transform-gpu md:row-start-1 md:row-end-4 md:col-start-2 md:col-end-3">
+                    <div>
+                        <img class="absolute -right-20 -top-20 opacity-60" src="" alt="">
+                    </div>
+                    <div class="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300 group-hover:-translate-y-10">
+                        <svg class="h-12 w-12 origin-left transform-gpu text-neutral-700 transition-all duration-300 ease-in-out group-hover:scale-75"><use href="#bell"></use></svg>
+                        <h3 class="text-xl font-semibold text-neutral-700">گزارشات</h3>
+                        <p class="max-w-lg text-neutral-400">اطلاع از وضعیت حضور و غیاب دانش‌آموزان</p>
+                    </div>
+                    <div class="pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                        <a href="/reports" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 pointer-events-auto">
+                            مشاهده
+                            <svg class="mr-2 h-4 w-4"><use href="#move-left"></use></svg>
+                        </a>
+                    </div>
+                    <div class="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03]"></div>
+                </NavLink>
+                <NavLink href="/send" class="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] transform-gpu md:col-start-1 md:col-end-2 md:row-start-1 md:row-end-3">
+                    <div>
+                        <img class="absolute -right-20 -top-20 opacity-60" src="" alt="">
+                    </div>
+                    <div class="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300 group-hover:-translate-y-10">
+                        <svg class="h-12 w-12 origin-left transform-gpu text-neutral-700 transition-all duration-300 ease-in-out group-hover:scale-75"><use href="#send"></use></svg>
+                        <h3 class="text-xl font-semibold text-neutral-700">اطلاعیه ها</h3>
+                        <p class="max-w-lg text-neutral-400">ارسال اطلاعیه و پیام به معلمان و والدین</p>
+                    </div>
+                    <div class="pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                        <a href="/send" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 pointer-events-auto">
+                            مشاهده
+                            <svg class="mr-2 h-4 w-4"><use href="#move-left"></use></svg>
+                        </a>
+                    </div>
+                    <div class="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03]"></div>
+                </NavLink>
+                <NavLink href="/addteachers" class="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] transform-gpu md:col-start-1 md:col-end-2 md:row-start-3 md:row-end-4">
+                    <div>
+                        <img class="absolute -right-20 -top-20 opacity-60" src="" alt="">
+                    </div>
+                    <div class="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300 group-hover:-translate-y-10">
+                        <svg class="h-12 w-12 origin-left transform-gpu text-neutral-700 transition-all duration-300 ease-in-out group-hover:scale-75"><use href="#users"></use></svg>
+                        <h3 class="text-xl font-semibold text-neutral-700">مدیریت معلمان</h3>
+                        <p class="max-w-lg text-neutral-400">تعریف و ثبت اطلاعات معلم</p>
+                    </div>
+                    <div class="pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                        <a href="/addteachers" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 pointer-events-auto">
+                            مشاهده
+                            <svg class="mr-2 h-4 w-4"><use href="#move-left"></use></svg>
+                        </a>
+                    </div>
+                    <div class="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03]"></div>
+                </NavLink>
+                <NavLink href="addclasses" class="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] transform-gpu md:col-start-3 md:col-end-3 md:row-start-1 md:row-end-2">
+                    <div>
+                        <img class="absolute -right-20 -top-20 opacity-60" src="" alt="">
+                    </div>
+                    <div class="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300 group-hover:-translate-y-10">
+                        <svg class="h-12 w-12 origin-left transform-gpu text-neutral-700 transition-all duration-300 ease-in-out group-hover:scale-75"><use href="#book-open"></use></svg>
+                        <h3 class="text-xl font-semibold text-neutral-700">
+                            کلاس ها
+                        </h3>
+                        <p class="max-w-lg text-neutral-400">ایجاد، ویرایش، حذف و اختصاص کلاس به معلم</p>
+                    </div>
+                    <div class="pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                        <a href="/addclasses" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 pointer-events-auto">
+                        مشاهده
+                            <svg class="mr-2 h-4 w-4"><use href="#move-left"></use></svg>
+                        </a>
+                    </div>
+                    <div class="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03]"></div>
+                </NavLink>
+                <NavLink href="/schoolinfo" class="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] transform-gpu md:col-start-3 md:col-end-3 md:row-start-2 md:row-end-4">
+                    <div>
+                        <img class="absolute -right-20 -top-20 opacity-60" src="" alt="">
+                    </div>
+                    <div class="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300 group-hover:-translate-y-10">
+                        <svg class="h-12 w-12 origin-left transform-gpu text-neutral-700 transition-all duration-300 ease-in-out group-hover:scale-75"><use href="#setting"></use></svg>
+                        <h3 class="text-xl font-semibold text-neutral-700">
+                            تنظیمات
+                        </h3>
+                        <p class="max-w-lg text-neutral-400">بروزرسانی اطلاعات مربوط به مدرسه</p>
+                    </div>
+                    <div class="pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                        <a href="/schoolinfo" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 pointer-events-auto">
+                            مشاهده
+                            <svg class="mr-2 h-4 w-4"><use href="#move-left"></use></svg>
+                        </a>
+                    </div>
+                    <div class="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03]"></div>
+                </NavLink>
+            </div>
+        </div>
+    </div>
+</div>
+</AuthorizeView>
+<AuthorizeView Roles="Teacher">
+<div class="relative flex items-center justify-center h-screen w-full m-auto p-16 bg-background text-foreground">
+    <div class="absolute lab-bg inset-0 size-full">
+        <div class="absolute inset-0 bg-[radial-gradient(#00000021_1px,transparent_1px)]"></div>
+        <div class="flex w-full justify-center relative">
+            <div class="grid w-full auto-rows-[22rem] grid-cols-3 gap-4">
+                <NavLink href="/attendance" class="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] transform-gpu">
+                    <div>
+                        <img class="absolute -right-20 -top-20 opacity-60" src="" alt="">
+                    </div>
+                    <div class="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300 group-hover:-translate-y-10">
+                        <svg class="h-12 w-12 origin-left transform-gpu text-neutral-700 transition-all duration-300 ease-in-out group-hover:scale-75"><use href="#clipboard-check"></use></svg>
+                        <h3 class="text-xl font-semibold text-neutral-700">حضور و غیاب</h3>
+                        <p class="max-w-lg text-neutral-400">ثبت حضور و غیاب دانش آموزان</p>
+                    </div>
+                    <div class="pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                        <a href="/attendance" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 pointer-events-auto">
+                            مشاهده
+                            <svg class="mr-2 h-4 w-4"><use href="#move-left"></use></svg>
+                        </a>
+                    </div>
+                    <div class="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03]"></div>
+                </NavLink>
+                <NavLink href="/notifications" class="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] transform-gpu">
+                    <div>
+                        <img class="absolute -right-20 -top-20 opacity-60" src="" alt="">
+                    </div>
+                    <div class="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300 group-hover:-translate-y-10">
+                        <svg class="h-12 w-12 origin-left transform-gpu text-neutral-700 transition-all duration-300 ease-in-out group-hover:scale-75"><use href="#bell"></use></svg>
+                        <h3 class="text-xl font-semibold text-neutral-700">اطلاعیه ها</h3>
+                        <p class="max-w-lg text-neutral-400">دریافت اطلاعیه ها و اخبار مورد نیاز</p>
+                    </div>
+                    <div class="pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                        <a href="/notifications" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 pointer-events-auto">
+                            مشاهده
+                            <svg class="mr-2 h-4 w-4"><use href="#move-left"></use></svg>
+                        </a>
+                    </div>
+                    <div class="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03]"></div>
+                </NavLink>
+                <NavLink href="/addstudents" class="group relative col-span-3 flex flex-col justify-between overflow-hidden rounded-xl bg-white [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] transform-gpu">
+                    <div>
+                        <img class="absolute -right-20 -top-20 opacity-60" src="" alt="">
+                    </div>
+                    <div class="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300 group-hover:-translate-y-10">
+                        <svg class="h-12 w-12 origin-left transform-gpu text-neutral-700 transition-all duration-300 ease-in-out group-hover:scale-75"><use href="#users"></use></svg>
+                        <h3 class="text-xl font-semibold text-neutral-700">
+                            دانش‌آموزان من
+                        </h3>
+                        <p class="max-w-lg text-neutral-400">تعریف و ثبت اطلاعات دانش آموزان</p>
+                    </div>
+                    <div class="pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                        <a href="/addstudents" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 pointer-events-auto">
+                            مشاهده
+                            <svg class="mr-2 h-4 w-4"><use href="#move-left"></use></svg>
+                        </a>
+                    </div>
+                    <div class="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300 group-hover:bg-black/[.03]"></div>
+                </NavLink>
+            </div>
+        </div>
+    </div>
+</div>
+</AuthorizeView>

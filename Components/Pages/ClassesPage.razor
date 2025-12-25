@@ -1,0 +1,225 @@
+@page "/addclasses"
+@attribute [Authorize(Roles = "Admin")]
+@inject ApplicationDbContext Context
+
+@inject IJSRuntime JSRuntime
+
+<div class="container mx-auto">
+    <h3 class="text-2xl font-bold text-neutral-800 mb-6">مدیریت کلاس‌ها</h3>
+
+    <EditForm Model="classModel" OnValidSubmit="HandleSubmit" class="bg-neutral-100 p-6 rounded-lg shadow-md mb-8">
+        <DataAnnotationsValidator />
+        <div class="mb-4">
+            <label class="block text-neutral-700 font-medium mb-2">نام کلاس:</label>
+            <InputText class="w-full p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-neutral-500" @bind-Value="classModel.Name" />
+            <ValidationMessage For="@(() => classModel.Name)" class="text-red-600 text-sm" />
+        </div>
+        <div class="mb-4">
+            <label class="block text-neutral-700 font-medium mb-2">معلم:</label>
+            <InputSelect class="w-full p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-neutral-500" @bind-Value="classModel.TeacherId">
+                <option value="0">انتخاب کنید...</option>
+                @foreach (var teacher in teachers)
+                {
+                    <option value="@teacher.Id">@teacher.FirstName @teacher.LastName</option>
+                }
+            </InputSelect>
+            <ValidationMessage For="@(() => classModel.TeacherId)" class="text-red-600" />
+        </div>
+        <button type="submit" class="bg-neutral-800 text-white px-4 py-2 rounded-md hover:bg-neutral-700 transition text-sm">
+            @(isEditing ? "به‌روزرسانی کلاس" : "افزودن کلاس")
+        </button>
+        @if (isEditing)
+        {
+            <button type="button" class="mr-2 bg-neutral-500 text-white px-4 py-2 rounded-md hover:bg-neutral-600 transition text-sm" @onclick="CancelEdit">لغو</button>
+        }
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="mt-4 p-2 rounded-md @messageClass">@message</div>
+        }
+    </EditForm>
+
+    @if (classes.Any())
+    {
+        <div class="bg-white p-1 rounded-lg shadow-md">
+            <h4 class="text-lg font-semibold mb-4">لیست کلاس‌ها</h4>
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="p-2 text-right">نام کلاس</th>
+                        <th class="p-2 text-right">معلم</th>
+                        <th class="p-2 text-right">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var classItem in classes)
+                    {
+                        <tr class="border-b">
+                            <td class="p-2 text-sm">@classItem.Name</td>
+                            <td class="p-2 text-sm">@(classItem.Teacher?.FirstName + " " + classItem.Teacher?.LastName)</td>
+                            <td class="p-2 flex flex-col space-y-1 sm:space-y-0 sm:flex-row gap-x-2">
+                                <button
+                                    class="bg-neutral-800 text-white px-2 py-1 rounded-md hover:bg-white hover:text-neutral-800 transition hover:underline text-sm"
+                                    @onclick="() => StartEdit(classItem)">ویرایش</button>
+                                <button class="text-neutral-800 bg-white px-3 py-1 rounded-md hover:bg-neutral-700 hover:text-white transition hover:underline text-sm"
+                                    @onclick="() => DeleteClass(classItem.Id)">حذف</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private ClassModel classModel = new();
+    private List<Class> classes = new();
+    private List<Teacher> teachers = new();
+    private bool isEditing = false;
+    private int editingClassId = 0;
+    private string? message;
+    private string messageClass = "";
+    private bool isLoading = false;
+
+    private class ClassModel
+    {
+        public string? Name { get; set; }
+        public int TeacherId { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        classes = await Context.Classes
+            .Include(c => c.Teacher)
+            .ToListAsync();
+        teachers = await Context.Teachers
+            .ToListAsync();
+    }
+
+    private async Task HandleSubmit()
+    {
+        isLoading = true;
+        message = null;
+        messageClass = "";
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(classModel.Name))
+            {
+                message = "نام کلاس نمی‌تواند خالی باشد.";
+                messageClass = "bg-red-100 text-red-800";
+                return;
+            }
+            if (classModel.TeacherId == 0)
+            {
+                message = "لطفاً یک معلم انتخاب کنید.";
+                messageClass = "bg-red-100 text-red-800";
+                return;
+            }
+
+            // چک تکراری بودن نام کلاس
+            if (await Context.Classes.AnyAsync(c => c.Name == classModel.Name && c.Id != editingClassId))
+            {
+                message = "کلاسی با این نام قبلاً وجود دارد.";
+                messageClass = "bg-red-100 text-red-800";
+                return;
+            }
+
+            var newClass = new Class
+            {
+                Name = classModel.Name,
+                TeacherId = classModel.TeacherId
+            };
+
+            if (isEditing)
+            {
+                newClass.Id = editingClassId;
+                var existingClass = await Context.Classes.FindAsync(editingClassId);
+                if (existingClass != null)
+                {
+                    existingClass.Name = newClass.Name;
+                    existingClass.TeacherId = newClass.TeacherId;
+                    Context.Classes.Update(existingClass);
+                }
+            }
+            else
+            {
+                Context.Classes.Add(newClass);
+            }
+
+            await Context.SaveChangesAsync();
+
+            message = isEditing ? "کلاس با موفقیت بروزرسانی شد." : "کلاس با موفقیت اضافه شد.";
+            messageClass = "bg-green-100 text-green-800";
+            classModel = new ClassModel();
+            isEditing = false;
+            editingClassId = 0;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            message = $"خطا در عملیات: {ex.Message}";
+            messageClass = "bg-red-100 text-red-800";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void StartEdit(Class classItem)
+    {
+        isEditing = true;
+        editingClassId = classItem.Id;
+        classModel = new ClassModel
+        {
+            Name = classItem.Name,
+            TeacherId = classItem.TeacherId
+        };
+    }
+
+    private void CancelEdit()
+    {
+        isEditing = false;
+        editingClassId = 0;
+        classModel = new ClassModel();
+        message = null;
+    }
+
+    private async Task DeleteClass(int classId)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "آیا مطمئن هستید که می‌خواهید این کلاس را حذف کنید؟");
+        if (confirmed)
+        {
+            try
+            {
+                if (await Context.StudentClasses.AnyAsync(sc => sc.ClassId == classId))
+                {
+                    message = "نمی‌توان کلاس را حذف کرد چون دانش‌آموز ثبت‌شده دارد.";
+                    messageClass = "bg-red-100 text-red-800";
+                    return;
+                }
+
+                var classToDelete = await Context.Classes.FindAsync(classId);
+                if (classToDelete != null)
+                {
+                    Context.Classes.Remove(classToDelete);
+                    await Context.SaveChangesAsync();
+                    message = "کلاس با موفقیت حذف شد.";
+                    messageClass = "bg-green-100 text-green-800";
+                    await LoadData();
+                }
+            }
+            catch (Exception ex)
+            {
+                message = $"خطا در حذف کلاس: {ex.Message}";
+                messageClass = "bg-red-100 text-red-800";
+            }
+        }
+    }
+}

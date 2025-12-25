@@ -1,0 +1,169 @@
+﻿@page "/addteachers"
+@attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Identity
+@inject ApplicationDbContext Context
+@inject NavigationManager NavigationManager
+
+<PageTitle>افزودن معلم</PageTitle>
+<div class="min-h-screen flex justify-center items-center">
+    <div class="min-h-screen flex justify-center items-center">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="bg-card text-card-foreground w-full max-w-md shadow-lg rounded-2xl border border-gray-200">
+                <div class="flex flex-col space-y-1.5 p-6">
+                    <h3 class="tracking-tight text-2xl font-semibold text-center text-gray-800">افزودن معلم</h3>
+                    <p class="text-center text-sm text-gray-500 mt-1">ساخت حساب کاربری برای معلمان. از ایجاد رمز عبور های ساده خودداری کنید.</p>
+                </div>
+                <div class="p-6 pt-0">
+                    <EditForm Model="teacherModel" class="space-y-5" OnValidSubmit="HandleAddTeacher">
+                    <DataAnnotationsValidator />
+                        <div>
+                            <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">نام کاربری</label>
+                            <div class="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
+                                <svg class="w-4 h-4 text-gray-500"><use href="#person"></use></svg>
+                                <InputText @bind-Value="teacherModel.UserName" type="text" class="flex h-9 w-full rounded-lg border-input bg-background px-3 py-2 text-sm text-foreground shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none" placeholder="نام کاربری معلم مورد نظر" />
+                                <ValidationMessage For="@(() => teacherModel.UserName)" />
+                            </div>
+                        </div>
+                        <div>
+                            <label
+                                class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">رمز عبور</label>
+                            <div class="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
+                                <svg class="w-4 h-4 text-gray-500"><use href="#lock"></use></svg>
+                                <InputText type="password" @bind-Value="teacherModel.Password" class="flex h-9 w-full rounded-lg border-input bg-background px-3 py-2 text-sm text-foreground shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none" placeholder="رمز عبور" />
+                                <ValidationMessage For="@(() => teacherModel.Password)" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">نام</label>
+                            <div class="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
+                                <svg class="w-4 h-4 text-gray-500"><use href="#pen-line"></use></svg>
+                                <InputText @bind-Value="teacherModel.FirstName" type="text" class="flex h-9 w-full rounded-lg border-input bg-background px-3 py-2 text-sm text-foreground shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none" placeholder="نام" />
+                                <ValidationMessage For="@(() => teacherModel.FirstName)" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">نام خانوادگی</label>
+                            <div class="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
+                                <svg class="w-4 h-4 text-gray-500"><use href="#pen-line"></use></svg>
+                                <InputText @bind-Value="teacherModel.LastName" type="text" class="flex h-9 w-full rounded-lg border-input bg-background px-3 py-2 text-sm text-foreground shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none"  placeholder="نام خانوادگی" />
+                                <ValidationMessage For="@(() => teacherModel.LastName)" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">شماره تلفن</label>
+                            <div class="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white">
+                                <svg class="w-4 h-4 text-gray-500"><use href="#smart-phone"></use></svg>
+                                <InputText @bind-Value="teacherModel.PhoneNumber" type="text" class="flex h-9 w-full rounded-lg border-input bg-background px-3 py-2 text-sm text-foreground shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50 border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none" placeholder="شماره تلفن" />
+                                <ValidationMessage For="@(() => teacherModel.PhoneNumber)" />
+                            </div>
+                        </div>
+
+                        <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-neutral-900 hover:bg-neutral-900/90 h-10 px-4 py-2 w-full rounded-xl hover:cursor-pointer text-white font-medium shadow-md" disabled="@isLoading">
+                            @if (isLoading)
+                            {
+                                <span class="flex items-center justify-center gap-2">
+                                    <svg class="animate-spin h-5 w-5 text-black">
+                                        <use href="#loader"></use>
+                                    </svg>
+                                    درحال افزودن...
+                                </span>
+                            }
+                            else
+                            {
+                                <span>افزودن</span>
+                            }
+                        </button>
+                        @if (!string.IsNullOrEmpty(message))
+                        { <div class="mt-4 p-2 rounded-md @messageClass">@message</div> }
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isLoading = false;
+    private TeacherModel teacherModel = new();
+    private string? message;
+    private string messageClass = "";
+    private class TeacherModel
+    {
+        public string? UserName { get; set; }
+        public string? Password {get;set;}
+        public string? FirstName { get; set;}
+        public string? LastName { get; set;}
+        public string? PhoneNumber { get; set; }
+    }
+
+    private async Task HandleAddTeacher()
+    {
+        isLoading = true;
+        message = null;
+        messageClass = "";
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(teacherModel.UserName) ||
+            string.IsNullOrWhiteSpace(teacherModel.Password) ||
+            string.IsNullOrWhiteSpace(teacherModel.FirstName) ||
+            string.IsNullOrWhiteSpace(teacherModel.LastName) ||
+            string.IsNullOrWhiteSpace(teacherModel.PhoneNumber))
+            {
+                message = "لطفاً تمام فیلدهای اجباری را پر کنید.";
+                messageClass = "bg-red-100 text-red-800 text-center";
+                return;
+            }
+
+            if (await Context.Users.AnyAsync(u => u.UserName == teacherModel.UserName))
+            {
+                message = "نام کاربری قبلاً استفاده شده است.";
+                messageClass = "bg-red-100 text-red-800";
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(teacherModel.PhoneNumber) &&
+            await Context.Users.AnyAsync(u => u.PhoneNumber == teacherModel.PhoneNumber))
+            {
+                message = "شماره تلفن قبلاً ثبت شده است.";
+                messageClass = "bg-red-100 text-red-800";
+                return;
+            }
+
+            var user = new User
+            {
+                UserName = teacherModel.UserName,
+                PhoneNumber = teacherModel.PhoneNumber,
+                Role = Role.Teacher,
+                PasswordHash = new PasswordHasher<User>().HashPassword(null, teacherModel.Password)
+            };
+
+            var teacher = new Teacher
+            {
+                FirstName = teacherModel.FirstName,
+                LastName = teacherModel.LastName,
+                User = user
+            };
+
+            Context.Users.Add(user);
+            Context.Teachers.Add(teacher);
+            await Context.SaveChangesAsync();
+
+            message = "معلم با موفقیت اضافه شد.";
+            messageClass = "bg-green-100 text-green-800";
+            teacherModel = new TeacherModel();
+        }
+        catch (Exception ex)
+        {
+            message = $"خطا در افزودن معلم: {ex.Message}";
+            messageClass = "bg-red-100 text-red-800";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+
+    }

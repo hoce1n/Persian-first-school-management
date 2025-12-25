@@ -1,0 +1,35 @@
+@inject BreadcrumbService BreadcrumbService
+@inject NavigationManager NavigationManager
+
+<nav class="flex border-b border-gray-200 bg-white h-12" aria-label="Breadcrumb">
+    <ol role="list" class="mx-auto flex w-full max-w-(--breakpoint-xl) space-x-4 px-4 sm:px-6 lg:px-8">
+        <li class="flex">
+            <div class="flex items-center">
+                <a href="/" class="text-gray-400 hover:text-gray-500">
+                    <svg class="size-5 shrink-0"><use href="#home"></use></svg>
+                </a>
+            </div>
+        </li>
+        @foreach (var item in BreadcrumbService.GetBreadcrumbs())
+        {
+        <li class="flex">
+            <div class="flex items-center">
+                <svg class="w-6 shrink-0 text-gray-200"><use href="#chevron-left"></use></svg>
+                    <a href="@item.Link" class="mr-4 text-sm font-medium text-gray-500 hover:text-gray-700">@item.Label</a>
+            </div>
+        </li>
+        }
+    </ol>
+</nav>
+
+@code {
+    protected override void OnInitialized()
+    {
+        BreadcrumbService.BreadcrumbsChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        BreadcrumbService.BreadcrumbsChanged -= StateHasChanged;
+    }
+}

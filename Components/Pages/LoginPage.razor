@@ -1,0 +1,125 @@
+﻿@page "/login"
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using System.Data
+@inject NavigationManager Navigation
+@inject ApplicationDbContext DbContext
+@inject LoginTokenService LoginTokenService
+
+<div class="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md">
+    <img class="mx-auto h-10 w-auto grayscale hover:grayscale-25 transition-all duration-200" src="./favicon.png" alt="Your Company">
+    <h2 class="mt-6 text-center text-2xl/9 font-bold tracking-tight text-gray-900">ورود معلم</h2>
+  </div>
+
+  <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
+    <div class="bg-zinc-50 px-6 py-12 shadow-sm sm:rounded-lg sm:px-12">
+            <EditForm Model="loginModel" FormName="Login-School" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-sm mb-2">نام کاربری یا شماره تلفن</label>
+                        <InputText @bind-Value="loginModel.Username" type="text"
+                            class="text-sm w-full py-2 px-3 border rounded-lg focus:outline-none focus:ring-1 bg-white text-black focus:ring-blue-500 border-gray-300"
+                            placeholder="نام کاربری خود را وارد کنید." />
+                        <ValidationMessage class="text-xxs mt-2 mr-2" For="@(() => loginModel.Username)" />
+                </div>
+                <div>
+                    <label class="block text-sm mb-2">رمز عبور</label>
+                        <InputText @bind-Value="loginModel.Password" type="password"
+                            class="text-sm w-full py-2 px-3 border rounded-lg focus:outline-none focus:ring-1 bg-white text-black focus:ring-blue-500 border-gray-300"
+                            placeholder="رمز عبور خود را وارد کنید." />
+                        <ValidationMessage class="text-xxs mt-2 mr-2" For="@(() => loginModel.Password)" />
+                </div>
+                <div class="flex items-center">
+                    <InputCheckbox @bind-Value="loginModel.RememberMe" id="remember" class="ml-2 " />
+                        <label for="remember" class="text-sm">مرا به خاطر بسپار</label>
+                </div>
+                <button type="submit" 
+                    class="inline-flex items-center justify-center whitespace-nowrap text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-neutral-900 hover:bg-neutral-900/90 h-10 px-4 py-2 w-full rounded-xl hover:cursor-pointer text-white font-medium shadow-md"
+                    disabled="@IsLoading">
+                        @if (IsLoading)
+                        {
+                            <span class="flex items-center justify-center gap-2">
+                                <svg class="animate-spin h-5 w-5 text-white">
+                                    <use href="#loader"></use>
+                                </svg>
+                                درحال بررسی...
+                            </span>
+                        }
+                        else
+                        {
+                            <span>ورود</span>
+                        }
+                </button>
+                    
+                <div class="text-center text-gray-600 text-sm">ⓘ ورود فقط مخصوص معلمین مدرسه</div>
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <p class="error text-sm bg-red-500/50 p-3 rounded-xl text-white">@errorMessage</p>
+                    }
+            </div>
+            </EditForm>
+
+    </div>
+
+    <p class="mt-10 text-center text-sm/6 text-gray-500">
+      اطلاعات بیشتر؟
+      <a href="https://rahaan.ir" target="blank" class="font-semibold text-neutral-900 hover:text-neutral-700">گروه نرم افزاری رهان</a>
+    </p>
+  </div>
+</div>
+
+
+@code {
+    private LoginModel loginModel = new LoginModel();
+    private string? errorMessage;
+    private bool IsLoading = false;
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            IsLoading = true;
+            errorMessage = null;
+
+            if (string.IsNullOrWhiteSpace(loginModel.Username) || string.IsNullOrWhiteSpace(loginModel.Password))
+            {
+                errorMessage = "نام کاربری/شماره و رمز عبور نمی‌توانند خالی باشند.";
+                return;
+            }
+
+            var user = await DbContext.Users
+                .FirstOrDefaultAsync(u => u.PhoneNumber == loginModel.Username || u.UserName == loginModel.Username);
+
+            if (user == null)
+            {
+                errorMessage = "نام کاربری یا شماره تلفن یافت نشد.";
+                return;
+            }
+
+            var hasher = new PasswordHasher<User>();
+            var result = hasher.VerifyHashedPassword(user, user.PasswordHash ?? "", loginModel.Password);
+            if (result != PasswordVerificationResult.Success)
+            {
+                errorMessage = "رمز عبور اشتباه است.";
+                return;
+            }
+
+            user.LastLoginAt = DateTime.UtcNow;
+            await DbContext.SaveChangesAsync();
+
+            string token = LoginTokenService.CreateToken(user.Id, TimeSpan.FromMinutes(5));
+            Navigation.NavigateTo($"/auth/signin?token={System.Net.WebUtility.UrlEncode(token)}", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"خطای غیرمنتظره: {ex.Message}";
+            Console.WriteLine($"Login error: {ex}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+}

@@ -1,0 +1,25 @@
+@page "/access-denied"
+
+<section class="py-32">
+    <div class="container mx-auto">
+        <div class="flex justify-center">
+            <div class="max-w-5xl">
+                <div class="flex flex-col items-start justify-between gap-8 rounded-lg bg-neutral-200 px-6 py-10 md:flex-row lg:px-20 lg:py-16">
+                    <div>
+                        <svg class="size-12 my-4"><use href="#ban"></use></svg>
+                        <h4 class="mb-1 text-2xl font-bold md:text-3xl">
+                            دسترسی غیرمجاز
+                        </h4>
+                        <p class="text-neutral-500">
+                            متأسفانه شما دسترسی لازم برای مشاهده این صفحه را ندارید. لطفاً به صفحه اصلی بازگردید.
+                        </p>
+                        <a href="/" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-neutral-900 text-zinc-50 hover:bg-neutral-900/90 h-10 px-4 py-2 mt-6">
+                            بازگشت به صفحه اصلی
+                            <svg class="size-4 mr-2"><use href="#move-left"></use></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

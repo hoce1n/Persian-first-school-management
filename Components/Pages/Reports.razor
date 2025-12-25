@@ -1,0 +1,192 @@
+@page "/reports"
+@attribute [Authorize(Roles = "Admin")]
+@inject ApplicationDbContext Context
+
+<div class="container mx-auto p-4">
+    <h3 class="text-2xl font-bold mb-6 text-neutral-800">گزارشات حضور و غیاب</h3>
+
+    <div class="mb-4">
+        <label class="block text-sm font-medium mb-2 text-neutral-700">انتخاب کلاس</label>
+        <InputSelect
+            class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            @bind-Value="selectedClassId">
+            <option value="0">انتخاب کنید...</option>
+            @foreach (var classItem in classes)
+            { <option value="@classItem.Id">@classItem.Name</option> }
+        </InputSelect>
+
+        <label class="block text-sm font-medium mb-2 mt-4 text-neutral-700">نوع فیلتر تاریخ</label>
+        <InputSelect
+            class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            @bind-Value="filterType">
+            <option value="None">بدون فیلتر</option>
+            <option value="Week">هفته</option>
+            <option value="Month">ماه</option>
+        </InputSelect>
+
+        @if (filterType == "Week" || filterType == "Month")
+        {
+            <label class="block text-sm font-medium mb-2 mt-4 text-neutral-700">انتخاب سال و ماه</label>
+            <InputNumber
+                class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                @bind-Value="filterYear" placeholder="سال (مثال: 1404)" />
+            <InputNumber
+                class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2"
+                @bind-Value="filterMonth" placeholder="ماه (1-12)" />
+            @if (filterType == "Week")
+            {
+                <InputNumber
+                    class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2"
+                    @bind-Value="filterWeek" placeholder="هفته (1-4)" />
+            }
+        }
+
+        <button
+            class="mt-4 inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-neutral-900 hover:bg-neutral-900/90 h-10 px-4 py-2 w-full rounded-xl hover:cursor-pointer text-white shadow-md"
+            @onclick="LoadReports" disabled="@(selectedClassId == 0)">
+            نمایش گزارشات
+        </button>
+    </div>
+
+    @if (groupedAttendances.Any())
+    {
+        <div class="space-y-6">
+            @foreach (var group in groupedAttendances)
+            {
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h4 class="text-lg font-semibold mb-4 text-neutral-800">تاریخ: @group.Key.ToPersianDate()</h4>
+                    <div class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                        @foreach (var attendance in group)
+                        {
+                            <div class="bg-neutral-100 p-4 rounded-lg shadow-sm border border-gray-200">
+                                <h5 class="font-medium text-neutral-800">@attendance.Student.Name</h5>
+                                <p class="text-sm text-neutral-600 mt-1">
+                                    وضعیت:
+                                    @(attendance.Status == AttendanceStatus.Present ? "حاضر" :
+                                    (attendance.Status == AttendanceStatus.Absent ? "غیبت غیرموجه" : "غیبت موجه"))
+                                </p>
+                                <p class="text-sm text-neutral-600 mt-1">دلیل: @(attendance.Reason ?? "-")</p>
+                                <p class="text-sm text-neutral-600 mt-1">
+                                    شماره تلفن:
+                                    @if (!string.IsNullOrWhiteSpace(attendance.Student.User?.PhoneNumber))
+                                    {
+                                        @if (attendance.Status == AttendanceStatus.Absent)
+                                        {
+                                            <a href="sms:@attendance.Student.User.PhoneNumber?body=سلام @attendance.Student.Name، لطفاً دلیل غیبت @group.Key.ToPersianDate() رو توضیح بدید."
+                                                class="text-blue-600 hover:underline">ارسال پیام</a>
+                                        }
+                                        else
+                                        {
+                                            <span>@attendance.Student.User.PhoneNumber</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span>شماره موجود نیست</span>
+                                    }
+                                </p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="mt-4 p-2 rounded-md @messageClass">@message</div>
+    }
+</div>
+
+@code {
+    private int selectedClassId;
+    private List<Class> classes = new();
+    private List<IGrouping<DateTime, Attendance>> groupedAttendances = new();
+    private string? message;
+    private string messageClass = "";
+    private string filterType = "None";
+    private int filterYear = 1404;
+    private int filterMonth;
+    private int filterWeek;
+
+    protected override async Task OnInitializedAsync()
+    {
+        classes = await Context.Classes.ToListAsync();
+        message = $"تعداد کلاس‌ها: {classes.Count}";
+        messageClass = "text-black text-center";
+    }
+
+    private async Task LoadReports()
+    {
+        if (selectedClassId == 0)
+        {
+            groupedAttendances.Clear();
+            message = "لطفاً یک کلاس انتخاب کنید.";
+            messageClass = "bg-yellow-100 text-yellow-800";
+            StateHasChanged();
+            return;
+        }
+
+        if (filterType == "Week" || filterType == "Month")
+        {
+            if (filterYear < 1300 || filterYear > 1500 || filterMonth < 1 || filterMonth > 12)
+            {
+                message = "سال یا ماه نامعتبر است.";
+                messageClass = "bg-red-100 text-red-800";
+                groupedAttendances.Clear();
+                StateHasChanged();
+                return;
+            }
+            if (filterType == "Week" && (filterWeek < 1 || filterWeek > 4))
+            {
+                message = "هفته نامعتبر است.";
+                messageClass = "bg-red-100 text-red-800";
+                groupedAttendances.Clear();
+                StateHasChanged();
+                return;
+            }
+        }
+
+        var query = Context.Attendances
+        .Include(a => a.Student)
+        .ThenInclude(s => s.User)
+        .Where(a => a.ClassId == selectedClassId);
+
+        if (filterType == "Week" || filterType == "Month")
+        {
+            var pc = new System.Globalization.PersianCalendar();
+            DateTime startDate;
+            try
+            {
+                startDate = pc.ToDateTime(filterYear, filterMonth, 1, 0, 0, 0, 0);
+            }
+            catch (ArgumentException)
+            {
+                message = "تاریخ شمسی نامعتبر است.";
+                messageClass = "bg-red-100 text-red-800";
+                groupedAttendances.Clear();
+                StateHasChanged();
+                return;
+            }
+
+            var endDate = filterType == "Month"
+            ? startDate.AddMonths(1).AddDays(-1)
+            : startDate.AddDays((filterWeek - 1) * 7 + 6);
+
+            if (filterType == "Week")
+            {
+                startDate = startDate.AddDays((filterWeek - 1) * 7);
+            }
+
+            query = query.Where(a => a.Date.Date >= startDate.Date && a.Date.Date <= endDate.Date);
+        }
+
+        var orderedQuery = query.OrderByDescending(a => a.Date);
+        var attendances = await orderedQuery.ToListAsync();
+        groupedAttendances = attendances.GroupBy(a => a.Date.Date).ToList();
+        message = $"تعداد روزهای ثبت‌شده: {groupedAttendances.Count} روز";
+        messageClass = "bg-green-100 text-green-800";
+        StateHasChanged();
+    }
+}

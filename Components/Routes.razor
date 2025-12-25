@@ -1,0 +1,27 @@
+﻿@using School.Components.Pages
+@inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Components.Authorization
+
+<Microsoft.AspNetCore.Components.Authorization.CascadingAuthenticationState>
+    <Router AppAssembly="typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+                <NotAuthorized>
+                    @{
+                        Navigation.NavigateTo("/login", forceLoad: true);
+                    }
+                </NotAuthorized>
+                <Authorizing>
+                    <p>در حال بررسی احراز هویت...</p>
+                </Authorizing>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="routeData" Selector="h6" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not Found</PageTitle>
+            <LayoutView Layout="typeof(Layout.MainLayout)">
+                <NotFound />
+            </LayoutView>
+        </NotFound>
+    </Router>
+</Microsoft.AspNetCore.Components.Authorization.CascadingAuthenticationState>

@@ -1,0 +1,151 @@
+﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Navigation
+@inject ApplicationDbContext Context
+@inject AuthenticationStateProvider AuthStateProvider
+
+
+@if (!Navigation.Uri.Contains("/login"))
+{
+
+ <div class="md:hidden z-10 fixed inset-0 backdrop-blur-xs @(isSidebarOpen ? "block" : "hidden")" @onclick="ToggleSidebar"></div>
+
+ <button type="button" @onclick="ToggleSidebar" class="fixed w-10 h-10 flex md:hidden justify-center items-center right-8 top-8 [box-shadow:0_0_0_1px_rgba(0,0,0,.03),0_2px_4px_rgba(0,0,0,.05),0_12px_24px_rgba(0,0,0,.05)] bg-gray-400 rounded cursor-pointer z-50 @(isSidebarOpen ? "hidden" : "block")">
+    <svg class="w-6 h-6 text-white"><use href="#chevron-right"></use></svg>
+ </button>
+
+ <sidebar class="min-h-screen fixed overflow-y-scroll top-0 bottom-0 flex p-6 w-64 flex-col space-y-6 bg-white shadow-2xl transition-all z-30 md:right-0 @(isSidebarOpen ? "right-0" : "-right-100")">
+
+    <section class="relative flex items-center space-x-3">
+        <div class="w-9 h-9"><img src="./favicon.png" alt=""></div>
+        <div class="flex flex-col space-y-1">
+                <span class="text-neutral-500 text-xs font-medium">رهـان</span>
+                <a href="https://rahaan.ir" target="_blank" class="text-sm font-medium text-blue-700 underline">rahaan.ir</a>
+        </div>
+        
+    </section>
+
+     <div class="bg-neutral-200 rounded-xl h-px text-white">.</div>
+     <section>
+         <span class="text-xxs">اصلی</span>
+         <ul>
+             @foreach (var item in MenuItems.Where(m => m.Group == "main"))
+             {
+             <NavLink href="@item.Link" ActiveClass="" class="p-3">
+                <AuthorizeView Roles="@item.Roles">
+                            <li class="flex items-center text-sm space-x-3 @(Navigation.Uri.Contains(@item.Link) ? "p-2 bg-black/10 rounded-xl transition-all" : "")">
+                     <svg class="w-5 h-5">
+                         <use href="@item.Icon"></use>
+                     </svg>
+                     <span>@item.Label</span>
+                 </li>
+                </AuthorizeView>
+             </NavLink>
+             }
+         </ul>
+     </section>
+
+     <div class="bg-neutral-200 rounded-xl h-px w-full text-white">.</div>
+     <section>
+         <span class="text-xxs">گزارشات</span>
+         <ul>
+             @foreach (var item in MenuItems.Where(m => m.Group == "setting"))
+             {
+             <NavLink href="@item.Link" ActiveClass="" class="p-3">
+                <AuthorizeView Roles="@item.Roles">
+                 <li class="flex items-center text-sm space-x-3 @(Navigation.Uri.Contains(@item.Link) ? "p-2 bg-black/10 rounded-xl transition-all" : "")">
+                     <svg class="w-5 h-5">
+                         <use href="@item.Icon"></use>
+                     </svg>
+                     <span>@item.Label</span>
+                 </li>
+                </AuthorizeView>
+             </NavLink>
+             }
+         </ul>
+     </section>
+
+     <section class="">
+         <ul>
+                <AuthorizeView>
+                <Authorized>
+                <button @onclick="Logout" href="/logout" ActiveClass="" class="p-3 cursor-pointer">
+                 <li class="flex items-center text-sm space-x-3">
+                     <svg class="w-5 h-5">
+                         <use href="#logout"></use>
+                     </svg>
+                     <span>خروج</span>
+                 </li>
+                </button>
+                </Authorized>
+                <NotAuthorized>
+             @foreach (var item in MenuItems.Where(m => m.Group == "footer"))
+             {
+             <NavLink href="@item.Link" ActiveClass="" class="p-3">
+                
+                 <li class="flex items-center text-sm space-x-3">
+                     <svg class="w-5 h-5">
+                         <use href="@item.Icon"></use>
+                     </svg>
+                     <span>@item.Label</span>
+                 </li>
+             </NavLink>
+             }
+            </NotAuthorized>
+            </AuthorizeView>
+
+         </ul>
+     </section>
+ </sidebar>
+}
+
+
+@code {
+    private void Logout() => Navigation.NavigateTo("/auth/signout", forceLoad: true);
+    
+    private bool isSidebarOpen = false;
+    private string? schoolName;
+    private string? UserName;
+    private string? ActiveClass;
+    
+
+    private void ToggleSidebar()
+    {
+        isSidebarOpen = !isSidebarOpen;
+
+    }
+
+    public class MenuItem
+    {
+        public string? Icon { get; set; }
+        public string? Label { get; set; }
+        public string? Link { get; set; }
+        public string? Group { get; set; }
+        public string? Roles { get; set; }
+    }
+    private List<MenuItem> MenuItems = new()
+    {
+        new MenuItem { Roles = "Admin, Teacher, Student", Icon = "#layout-panel", Label = "خانه", Link = "", Group = "main" },
+        new MenuItem { Roles = "Admin, Teacher", Icon = "#table", Label = "حضور و غیاب", Link = "attendance", Group = "main" },
+        new MenuItem { Roles = "Admin", Icon = "#book-user", Label = "معلمان", Link = "addteachers", Group = "main" },
+        new MenuItem { Roles = "Admin, Teacher", Icon = "#users", Label = "دانش آموزان", Link = "addstudents", Group = "main" },
+        new MenuItem { Roles = "Admin", Icon = "#book-open", Label = "کلاس ها", Link = "addclasses", Group = "main" },
+        new MenuItem { Roles = "Admin, Teacher, Student", Icon = "#megaphone", Label = "اطلاعیه‌ها", Link = "notifications", Group = "main" },
+        new MenuItem { Roles = "Admin", Icon = "#send", Label = "ارسال پیام", Link = "send", Group = "main" },
+        new MenuItem { Roles = "Admin", Icon = "#setting", Label = "گزارشات", Link = "reports", Group = "setting" },
+        new MenuItem { Roles = "Admin, Teacher, Student", Icon = "#login", Label = "ورود به اکانت", Link = "login", Group = "footer" }
+    };
+
+    @* protected override async Task OnInitializedAsync()
+    {
+        var schoolInfo = await Context.SchoolInfos.FirstOrDefaultAsync();
+        if (schoolInfo != null)
+        {
+            schoolName = schoolInfo.SchoolName;
+        }
+        else
+        {
+            schoolName = "مدرسه پیش‌فرض";
+        }
+    } *@
+}
