@@ -3,3 +3,7 @@ bin/
 node_modules/
 obj/
 web.config
+
+# Local and environment-specific configuration
+appsettings.*.json
+!appsettings.Development.json
